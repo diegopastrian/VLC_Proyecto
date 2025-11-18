@@ -39,8 +39,7 @@ def main_simulation():
             
             # 2.1. Definir la coordenada 3D del receptor (Cobot)
             # El receptor se mueve en el plano x, y a una altura H_RX
-            rx_coord = np.array()
-            
+            rx_coord = np.array() 
             # 2.2. FASE 1: Obtener Ganancia LOS y Distancia
             P_rx_los_clean, H_los_vector, d_vector = vlc_channel.calculate_los_gain(rx_coord)
             
