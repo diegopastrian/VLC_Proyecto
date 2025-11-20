@@ -1,115 +1,115 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm # Utilidad para mostrar una barra de progreso en el terminal
 
-# Importar todos nuestros módulos
+# Importamos nuestros módulos (la estructura modular)
 import config
 import vlc_channel
 import vlc_hostile
 import vlc_metrics
 
+# Intentamos importar tqdm para la barra de carga, si no existe, no falla.
+try:
+    from tqdm import tqdm
+except ImportError:
+    # Si no está instalado, definimos una función "dummy" que no hace nada visualmente pero permite que el código corra
+    def tqdm(iterator, **kwargs):
+        return iterator
+
 def main_simulation():
     """
-    Función principal que ejecuta el bucle de simulación,
-    calcula el BER en cada punto de la fábrica y genera el mapa de calor.
+    Función principal que ejecuta la simulación del canal VLC.
+    Recorre la fábrica punto a punto, calcula la potencia y genera el mapa de BER.
     """
-    
     print("--- Iniciando Simulación VLC en Entorno Industrial ---")
+    print(f"Dimensiones: {config.L}x{config.W}m | Resolución: {config.GRID_SIZE}x{config.GRID_SIZE}")
+
+    # 1. Preparar la cuadrícula de simulación
+    # Creamos vectores espaciales para el largo (X) y ancho (Y)
+    x = np.linspace(0.1, config.L - 0.1, config.GRID_SIZE)
+    y = np.linspace(0.1, config.W - 0.1, config.GRID_SIZE)
     
-    # 1. Preparar la cuadrícula de simulación (Eje X y Y)
-    grid_points = config.GRID_SIZE
-    # Creamos un espacio lineal para X y Y desde 0.1 hasta L/W
-    x = np.linspace(0.1, config.L - 0.1, grid_points)
-    y = np.linspace(0.1, config.W - 0.1, grid_points)
+    # Matrices para guardar los resultados (Mapa de calor)
+    # Usamos ceros inicialmente
+    BER_map = np.zeros((config.GRID_SIZE, config.GRID_SIZE))
+    SNR_map = np.zeros((config.GRID_SIZE, config.GRID_SIZE)) # Opcional, por si quieres graficar SNR luego
     
-    # Inicializar las matrices para almacenar los resultados
-    BER_map = np.zeros((grid_points, grid_points))
-    SNR_map = np.zeros((grid_points, grid_points))
-    
-    # Obtener la potencia NLOS, que es constante [1]
+    # 2. Pre-cálculo de componentes constantes
+    # La potencia NLOS (rebotes) se asume constante en toda la sala para este modelo
     P_rx_nlos = vlc_channel.calculate_nlos_gain()
     
-    # Definir la temperatura ambiente (usamos la base para la simulación inicial) [2]
-    T_simulacion = config.T_AMBIENTE # Cambiar a config.T_EXTREMA para simular impacto de altas temperaturas
-    
-    # 2. Bucle principal sobre la cuadrícula (recorriendo el piso con el Cobot)
-    # Usamos tqdm para tener una barra de progreso visual
-    for i, xi in tqdm(enumerate(x), desc="Calculando BER", total=grid_points):
+    # 3. Bucle Principal: Mover el Cobot por toda la fábrica
+    # tqdm envuelve el bucle para mostrar una barra de progreso en la consola
+    for i, xi in tqdm(enumerate(x), total=config.GRID_SIZE, desc="Calculando"):
         for j, yj in enumerate(y):
             
-            # 2.1. Definir la coordenada 3D del receptor (Cobot)
-            # El receptor se mueve en el plano x, y a una altura H_RX
-            rx_coord = np.array() 
-            # 2.2. FASE 1: Obtener Ganancia LOS y Distancia
+            # --- A. Definir posición del receptor ---
+            # El receptor está en (x, y) a la altura del cobot (H_RX)
+            rx_coord = np.array([xi, yj, config.H_RX])
+            
+            # --- B. Módulo Canal (vlc_channel) ---
+            # Calculamos la ganancia LOS "limpia" y obtenemos vectores de distancia
             P_rx_los_clean, H_los_vector, d_vector = vlc_channel.calculate_los_gain(rx_coord)
             
-            # 2.3. FASE 2: Aplicar Factores Hostiles (Polvo y Obstáculo)
-            
-            # Atenuación por polvo (Beer-Lambert)
+            # --- C. Módulo Hostil (vlc_hostile) ---
+            # 1. Aplicar atenuación por polvo a cada enlace
             H_los_dusty_vector = vlc_hostile.apply_dust_attenuation(H_los_vector, d_vector)
             
-            # Bloqueo geométrico y Potencia Final (combina polvo + obstáculo + NLOS)
+            # 2. Verificar bloqueos (obstáculos) y sumar potencia total
+            # Esto nos devuelve la potencia final sumando LOS (si existe) + NLOS
             P_rx_total, _ = vlc_hostile.get_final_power(H_los_dusty_vector, P_rx_nlos, rx_coord)
             
-            # 2.4. FASE 3: Cálculo de Métricas (SNR y BER)
+            # --- D. Módulo Métricas (vlc_metrics) ---
+            # Calculamos la calidad de la señal final
+            snr_db, ber = vlc_metrics.calculate_snr_ber(P_rx_total, config.T_AMBIENTE)
             
-            snr_db, ber = vlc_metrics.calculate_snr_ber(P_rx_total, T_simulacion)
-            
-            # 2.5. Almacenar Resultados
-            # Usamos BER_map[j, i] para que Matplotlib lo grafique correctamente (Y, X)
-            BER_map[j, i] = ber 
+            # --- E. Guardar datos ---
+            # Importante: [j, i] corresponde a (y, x) en matrices para graficar correctamente
+            BER_map[j, i] = ber
             SNR_map[j, i] = snr_db
-            
-    # 3. Presentación de Resultados (Mapa de Calor del BER)
-    print("--- Simulación Completa. Generando Mapa de Calor del BER ---")
+
+    # 4. Visualización de Resultados
+    plot_results(x, y, BER_map)
+
+def plot_results(x, y, BER_map):
+    """Función auxiliar para generar los gráficos"""
+    print("--- Generando Mapa de Calor ---")
     
-    X, Y = np.meshgrid(x, y)
-    
-    # Configuración de la figura para el mapa de calor
     plt.figure(figsize=(10, 8))
     
-    # Graficamos el Logaritmo en base 10 del BER para visualizar mejor el rango (e.g., de 1e-3 a 1e-12)
-    # Los valores más bajos (más negativos) son MEJORES.
-    # Clip es para asegurar que no haya log(0)
-    BER_map_log = np.log10(np.clip(BER_map, 1e-12, 1)) 
+    # Malla para el gráfico
+    X, Y = np.meshgrid(x, y)
     
-    cp = plt.contourf(X, Y, BER_map_log, levels=20, cmap='inferno_r') # El mapa de calor 'inferno_r' hace que lo bueno sea amarillo/blanco
+    # Aplicamos logaritmo base 10 al BER para visualizarlo mejor
+    # (El BER varía de 10^-1 a 10^-12, el logaritmo lo hace lineal visualmente)
+    # np.clip evita log(0) si el BER es perfecto (0)
+    BER_log = np.log10(np.clip(BER_map, 1e-15, 1))
     
-    plt.colorbar(cp, label=r'Log$_{10}$(BER)')
+    # Dibujar contornos (Mapa de calor)
+    # cmap='inferno_r' usa colores claros para buen BER (bajo) y oscuros para mal BER
+    cp = plt.contourf(X, Y, BER_log, levels=20, cmap='inferno_r')
+    cbar = plt.colorbar(cp)
+    cbar.set_label(r'Log$_{10}$(BER) - Más negativo es mejor')
     
-    # Dibujar el Obstáculo (Visualiza la "Sombra")
+    # Dibujar el obstáculo si está activo para ver la correlación
     if config.OBSTACLE_PRESENTE:
-        rect = plt.Rectangle((config.OBSTACLE_X, config.OBSTACLE_Y), 
-                             config.OBSTACLE_WIDTH, config.OBSTACLE_DEPTH, 
-                             edgecolor='red', facecolor='red', alpha=0.5, 
-                             label='Obstáculo')
+        # Dibujamos un rectángulo rojo representando la obstrucción
+        rect = plt.Rectangle(
+            (config.OBSTACLE_X, config.OBSTACLE_Y), 
+            config.OBSTACLE_WIDTH, 
+            config.OBSTACLE_DEPTH,
+            linewidth=2, edgecolor='red', facecolor='none', hatch='//',
+            label='Zona Obstáculo'
+        )
         plt.gca().add_patch(rect)
+        plt.legend(loc='upper right')
+
+    plt.title(f'Mapa de Calor BER - Escenario Hostil\n(Polvo: {config.COEF_EXTINCION_ALPHA} | Obstáculo: {config.OBSTACLE_PRESENTE})')
+    plt.xlabel('Largo de la Fábrica (m)')
+    plt.ylabel('Ancho de la Fábrica (m)')
+    plt.axis('equal') # Para que la sala cuadrada se vea cuadrada
     
-    # Configuración de Etiquetas y Título
-    plt.title(f'Distribución de BER VLC en Fábrica (Polvo $\\alpha$={config.COEF_EXTINCION_ALPHA})')
-    plt.xlabel('Eje X de la Fábrica (m)')
-    plt.ylabel('Eje Y de la Fábrica (m)')
-    plt.axis('equal') # Asegura que la sala 7x7 se vea cuadrada
-    plt.legend()
+    print("Mostrando gráfico...")
     plt.show()
-    
-    # Mostrar métricas resumen en la consola
-    print(f"\nResumen de Resultados:")
-    print(f"Temperatura de Simulación: {T_simulacion-273.15:.2f} °C")
-    print(f"Polvo (Alpha): {config.COEF_EXTINCION_ALPHA} m^-1")
-    print(f"BER Mínimo (mejor zona): {BER_map.min():.2e}")
-    print(f"BER Máximo (peor zona/sombra): {BER_map.max():.2e}")
-    print(f"Tasa de Servicio (BER < 1e-6): {np.sum(BER_map < 1e-6) / (grid_points**2) * 100:.2f}% del área")
 
-
-if __name__ == '__main__':
-    # Este chequeo asegura que la librería tqdm esté instalada
-    try:
-        from tqdm import tqdm
-    except ImportError:
-        print("Instalando tqdm...")
-        import subprocess
-        subprocess.check_call(['pip', 'install', 'tqdm'])
-        from tqdm import tqdm
-        
+if __name__ == "__main__":
     main_simulation()
