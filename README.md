@@ -1,30 +1,36 @@
-# VLC_Proyecto: Simulación de Comunicaciones por Luz Visible (VLC) en un Entorno Industrial Hostil
+# 🏭 Simulación de Sistema Híbrido VLC/RF para Entornos Industriales (Industria 4.0)
 
-## 💡 Resumen del Proyecto
-Este repositorio contiene el código de simulación desarrollado en Python para modelar y evaluar el rendimiento de un sistema de **Comunicaciones por Luz Visible (VLC)** en un entorno industrial (Fábrica Inteligente) de **7 m × 7 m × 3 m**.
+> **Proyecto de Ingeniería de Telecomunicaciones**
+> Validación de robustez, cobertura y algoritmos de handover en sistemas Li-Fi bajo condiciones hostiles.
 
-El proyecto se enfoca en cuantificar el impacto de condiciones hostiles típicas de la Industria 4.0:
+## 📋 Descripción del Proyecto
 
-- Polvo (*Scattering*)
-- Obstáculos (*Shadowing*)
-- Temperaturas extremas
+Este repositorio contiene el código fuente para la simulación y análisis de un sistema de comunicaciones inalámbricas híbrido **VLC (Visible Light Communication) + RF (Wi-Fi)**.
 
-La metodología es modular, combinando modelos físicos estándar del canal óptico y generando métricas clave de fiabilidad.
+El objetivo es demostrar la viabilidad técnica de utilizar la infraestructura de iluminación LED para la transmisión de datos en entornos industriales severos, superando limitaciones físicas mediante una arquitectura de respaldo RF.
 
-**Entregable principal:**  
-➡️ *Mapas de calor 2D del BER (Tasa de Error de Bits)*, que muestran la distribución de calidad de comunicación en el plano de trabajo del robot colaborativo (Cobot).
+### 🚀 Características Principales (Versión 3.0)
+* **Modelado de Canal Óptico:** Distribución Lambertiana (LOS) y reflexiones difusas (NLOS) basadas en el modelo de esfera integradora.
+* **Simulación de Entorno Hostil:**
+    * Atenuación por polvo en suspensión (Ley de Beer-Lambert).
+    * Bloqueo físico por obstáculos (Shadowing geométrico AABB).
+    * Ruido térmico dependiente de la temperatura industrial.
+* **Validación Dinámica de Trayectoria:** Simulación de un Cobot (Robot Colaborativo) moviéndose a través de la fábrica en tiempo real.
+* **Algoritmo de Handover Inteligente:** Control con **histéresis** para evitar el efecto "Ping-Pong" (conmutación inestable) en los bordes de cobertura.
+* **Métricas de QoS:** Cálculo de BER (Bit Error Rate) y visualización de **Throughput (Caudal útil)** para validar la continuidad del servicio.
+## 🛠️ Estructura del Proyecto
 
----
+El código sigue una arquitectura modular para facilitar la escalabilidad y el mantenimiento:
 
-## 🛠️ Estructura Modular del Repositorio
-
-| Archivo | Función Principal | Metodología y Conceptos |
-|--------|-------------------|--------------------------|
-| `config.py` | Configuración Global | Define las dimensiones de la sala, coordenadas de los LEDs, parámetros ópticos (m, FOV) y coeficientes hostiles (p. ej., α del polvo). |
-| `vlc_channel.py` | Canal Base | Implementa el modelo LOS (Lambertiano) y el modelo NLOS simplificado (modelo de esfera). |
-| `vlc_hostile.py` | Factores Hostiles | Aplica atenuación por Polvo (Ley de Beer–Lambert) y Bloqueo Geométrico por obstáculos (*Shadowing*). |
-| `vlc_metrics.py` | Métricas de Rendimiento | Calcula varianza del ruido (incluye efecto de temperatura) y deriva SNR y BER (OOK basado en `erfc`). |
-| `main_simulation.py` | Orquestador y Visualización | Ejecuta la simulación 50×50, integra todos los módulos y genera el mapa de calor del Log10(BER). |
+| Archivo | Descripción |
+| :--- | :--- |
+| `config.py` | **Configuración Global:** Define geometría ($7 \times 7 \times 3$m), parámetros físicos de los LEDs, umbrales de BER, coeficientes de polvo ($\alpha$) y parámetros del obstáculo. |
+| `main_simulation.py` | **Análisis Estático:** Genera mapas de calor 2D para BER y Throughput en toda la planta, visualizando zonas de corte y respaldo. |
+| `simulation_trajectory.py` | **Análisis Dinámico (V3):** Simula el movimiento del robot, la lógica de control con histéresis y la conmutación de red (Handover). Genera gráficas de línea de tiempo. |
+| `vlc_channel.py` | **Física Óptica:** Implementa las ecuaciones de ganancia de canal LOS y el cálculo de potencia difusa (NLOS). |
+| `vlc_hostile.py` | **Modelos de Degradación:** Aplica las penalizaciones por polvo atmosférico y detecta colisiones rayo-obstáculo. |
+| `vlc_metrics.py` | **Cálculo de Señal:** Estima SNR, BER (OOK) y selecciona la velocidad de enlace (Throughput) basada en la calidad del canal. |
+| `rf_channel.py` | **Canal de Respaldo:** Simula la propagación Wi-Fi (Log-Normal Path Loss) para garantizar cobertura en zonas de sombra óptica. |
 
 ---
 

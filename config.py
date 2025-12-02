@@ -61,12 +61,24 @@ GRID_SIZE = 50                  # La cuadrícula será de 50x50 puntos (2500 ite
 # ===============================================
 
 # 4.1. Atenuación por Polvo (Ley de Beer-Lambert)
-COEF_EXTINCION_ALPHA = 0.1      
+COEF_EXTINCION_ALPHA = 0.8      
 
 # 4.2. Bloqueo por Obstáculo (Shadowing)
-OBSTACLE_PRESENTE = True        # True para activar el obstáculo
+OBSTACLE_PRESENTE = True      # True para activar el obstáculo
 OBSTACLE_X = 3.0                # Coordenada X donde empieza
 OBSTACLE_Y = 3.0                # Coordenada Y donde empieza
 OBSTACLE_WIDTH = 1.0            # <--- ¡ESTA ES LA VARIABLE QUE TE FALTA!
 OBSTACLE_DEPTH = 1.0            # Profundidad (m)
 OBSTACLE_HEIGHT = 2.0           # Altura (m)
+
+
+# ===============================================
+# 5. PARÁMETROS PARA COMPARACIÓN RF (WI-FI)
+# ===============================================
+RF_FREQ = 2.4e9                 # Frecuencia 2.4 GHz
+RF_TX_POWER_DBM = 20            # Potencia Tx típica Router Industrial (20 dBm = 100 mW)
+RF_TX_POS = np.array([0.5, 3.5, 2.5]) # Router en la pared (X=0, Y=mitad, Z=alto)
+
+# Modelo Log-Distance Path Loss
+RF_PATH_LOSS_EXP = 2.0          # Exponente de pérdida (2.0 = espacio libre, 3-4 = entorno denso)
+RF_NOISE_FLOOR_DBM = -90        # Piso de ruido térmico típico en receptor Wi-Fi

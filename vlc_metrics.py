@@ -58,3 +58,32 @@ def calculate_snr_ber(P_rx_total, T_kelvin):
         ber = 0.5 # Si no hay señal, la probabilidad de error es 50% (azar)
         
     return snr_db, ber
+
+def calculate_throughput_hybrid(ber_vlc, snr_rf):
+    """
+    Calcula el Throughput (Caudal útil) del sistema híbrido.
+    Lógica de Selección:
+    1. Si BER_VLC < 1e-4 (Umbral seguro) -> Usa VLC (100 Mbps).
+    2. Si BER_VLC > 1e-4 -> Usa RF (Wi-Fi).
+       - Si RF SNR > 10 dB -> 20 Mbps (Estable).
+       - Si RF SNR < 10 dB -> 0 Mbps (Corte total).
+    
+    Args:
+        ber_vlc (float): BER del canal óptico.
+        snr_rf (float): SNR del canal RF en dB.
+    Returns:
+        float: Throughput en Mbps.
+    """
+    # Capacidades máximas teóricas (simplificadas para simulación)
+    CAPACITY_VLC = 100.0 # Mbps
+    CAPACITY_RF = 20.0   # Mbps
+    
+    # Lógica de conmutación
+    if ber_vlc < 1e-4:
+        return CAPACITY_VLC
+    else:
+        # Fallback a RF
+        if snr_rf >= 10.0: # Umbral mínimo de operación Wi-Fi
+            return CAPACITY_RF
+        else:
+            return 0.0 # Zona muerta total (ni luz ni radio)
