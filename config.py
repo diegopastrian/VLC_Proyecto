@@ -36,8 +36,8 @@ M_ORDER = -np.log(2) / np.log(np.cos(PHI_HALF))
 FOV_MAX = np.deg2rad(60)        # Campo de Visión máximo (FOV) del receptor (radianes)
 
 # Parámetros para NLOS Simplificado (Modelo de esfera)
-RHO_REFLECTION_1 = 0.8          # Reflectividad de primer rebote
-RHO_AVG = 0.7                   # Reflectividad ponderada promedio
+RHO_REFLECTION_1 = 0.1         # Reflectividad de primer rebote
+RHO_AVG = 0.1                   # Reflectividad ponderada promedio
 A_ROOM = 2 * (L*W + L*H + W*H)  # Área total de la superficie de la sala para reflexiones
 
 # ===============================================
@@ -61,7 +61,7 @@ GRID_SIZE = 50                  # La cuadrícula será de 50x50 puntos (2500 ite
 # ===============================================
 
 # 4.1. Atenuación por Polvo (Ley de Beer-Lambert)
-COEF_EXTINCION_ALPHA = 0.8      
+COEF_EXTINCION_ALPHA = 0.1    
 
 # 4.2. Bloqueo por Obstáculo (Shadowing)
 OBSTACLE_PRESENTE = True      # True para activar el obstáculo
